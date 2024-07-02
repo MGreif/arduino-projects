@@ -1,18 +1,28 @@
-#include <ESP8266WiFi.h>        // Include the Wi-Fi library
+#include <ESP8266WebServer.h>
+
+#include <ESP8266WiFi.h>
 #include <SPI.h>
 #include <SD.h>
 #include "./config.h"
+#include <DHT.h>
 #define CONFIG_ITEM_SIZE_BYTES 50
 
-WiFiServer server(80);
+ESP8266WebServer web(80);
+ 
+const int ledPin = D0;
+const int DHTPin = D1;
 
-const int ledPin = D8;
+DHT dht(DHTPin, 11);
+
+void handleRoot();
+void handleLed();
+void handleDHT();
 
 void setup() {
   delay(1000);
   Serial.begin(115200);
   delay(1000);
-
+  dht.begin();
   pinMode(ledPin, OUTPUT);
   delay(10);
  
@@ -43,43 +53,46 @@ void setup() {
   }
   Serial.println("");
   Serial.println("WiFi connected");
-  
+  web.on("/", handleRoot);
+  web.on("/LED",handleLed);
+  web.on("/DHT", handleDHT);
   // Start server
-  server.begin();
+  web.begin();
   Serial.println("Server started");
  
   // Print the IP address
   Serial.print("ESP8266 IP: ");
-  Serial.print(WiFi.localIP());
-}
+  Serial.println(WiFi.localIP());
+} 
 
 
 void loop() {
-  // put your main code here, to run repeatedly:
- WiFiClient client = server.available();
-  if (!client) {
-    return;
-  }
-  // Warten auf Daten vom Client
-  Serial.println("new client");
-  while(!client.available()){
-    delay(1);
-  } 
-  
-  
- 
-  // Erste Zeile des Requests lesen
-  String request = client.readStringUntil('\r');
-  Serial.println(request);
+  web.handleClient();
+}
 
-  if (strstr(request.c_str(), "LED") != NULL) {
+void handleRoot() {
+  web.send(200, "text/html", "ESP8266 Works!");
+}
+
+void handleLed() {
+  String status = web.arg("status");
+  if (status.equals("ON")) {
+    web.send(200, "text/html", "Set ON");
     digitalWrite(ledPin, HIGH);
-    Serial.println("Activating LED");
-    
-  } else {
+  } else if (status.equals("OFF")) {
+    web.send(200, "text/html", "Set OFF");
     digitalWrite(ledPin, LOW);
-    Serial.println("Deactivating LED");
+  } else {
+    web.send(400, "text/html", "Unkown path param /LED?param=[ON|OFF]");
   }
+}
 
-  client.flush();
+void handleDHT() {
+  float humidity = dht.readHumidity();
+  float temperatureC = dht.readTemperature();
+  String response = "Humidity ";
+  response.concat(humidity);
+  response.concat("; Temperature: ");
+  response.concat(temperatureC);
+  web.send(200, "text/html", response);
 }

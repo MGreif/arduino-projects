@@ -10,6 +10,6 @@ struct WifiConfig {
 
 class Config {
   public:
-    void getWifiConfig(WifiConfig* out);
+    void getWifiConfig(WifiConfig* out, const char * filename);
 };
 #endif

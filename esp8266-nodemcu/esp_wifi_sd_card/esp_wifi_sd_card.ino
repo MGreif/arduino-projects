@@ -4,8 +4,6 @@
 #include "./config.h"
 #define CONFIG_ITEM_SIZE_BYTES 50
 
-const char* ssid     = "TheRogueOne";         // The SSID (name) of the Wi-Fi network you want to connect to
-const char* password = "bnLXFvU1Q5cUy3LlH3Wmgkn87P14LfStZYuZiS29";     // The password of the Wi-Fi network
 WiFiServer server(80);
 
 const int ledPin = D8;
@@ -29,12 +27,12 @@ void setup() {
 
   Config c;
   WifiConfig wifiConfig = {0};
-  c.getWifiConfig(&wifiConfig);
+  c.getWifiConfig(&wifiConfig, "config.txt");
   Serial.printf("Using ssid: %s \n", wifiConfig.ssid);
   Serial.printf("Using password: %s \n", wifiConfig.password);
 
-  // Mit Wifi verbinden
-  Serial.print("Verbinden mit: "); 
+  // Connecting to wifi
+  Serial.print("Connecting to: "); 
   Serial.println(wifiConfig.ssid);
   WiFi.begin(wifiConfig.ssid, wifiConfig.password);
   
@@ -44,43 +42,15 @@ void setup() {
     Serial.print(".");
   }
   Serial.println("");
-  Serial.println("WiFi verbunden");
-  // Start des Servers
+  Serial.println("WiFi connected");
+  
+  // Start server
   server.begin();
-  Serial.println("Server gestartet");
+  Serial.println("Server started");
  
   // Print the IP address
-  Serial.print("Diese URL zum Verbinden aufrufen: ");
-  Serial.print("http://");
+  Serial.print("ESP8266 IP: ");
   Serial.print(WiFi.localIP());
-  Serial.println("/");
-  
-
-
-  File myFile = SD.open("test.txt", FILE_WRITE);
-
-  if (myFile) {
-    Serial.println("Writing to file");
-    myFile.println("This is the first line");
-    myFile.println("This is the second line");
-    myFile.close();
-  } else {
-    Serial.println("Error opening file");
-  }
-
-  myFile = SD.open("test.txt", FILE_READ);
-
-  if (myFile) {
-    Serial.println("test.txt:");
-
-    // read from the file until there's nothing else in it:
-    while (myFile.available()) { Serial.write(myFile.read()); }
-    // close the file:
-    myFile.close();
-  } else {
-    // if the file didn't open, print an error:
-    Serial.println("error opening test.txt");
-  }
 }
 
 

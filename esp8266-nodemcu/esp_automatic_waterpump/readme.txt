@@ -7,9 +7,11 @@ Serving a simple webserver (ESP8266WebServer library) with following routes
 - / : Shows simple alive message
 - /water : Simply toggles a digital output. This puts a transistor into saturation mode and toggles a 200mA waterpump
 
+the config header and source file are currently soft symlinks to the other esp_wifi_sd_card project. This is to only use one singly maintained source
+
 ## Why
 
-Learning transistor calculations
+Learning transistor calculations. And i want to automatically water my plants lol
 
 ## Used components
 - ESP8266 NodeMCU

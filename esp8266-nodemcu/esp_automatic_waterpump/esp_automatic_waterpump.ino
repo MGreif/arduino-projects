@@ -6,8 +6,10 @@
 #include <SPI.h>
 #include <iostream>
 #include <stdio.h>
+#include "cron.h"
 
 ESP8266WebServer web(80);
+Cron cron;
 
 int waterPin = D0;
 
@@ -31,8 +33,11 @@ void setup() {
   Serial.println("Reading config ...");
   WifiConfig c;
 
-  Config conf;
-  conf.getWifiConfig(&c, "config.txt");
+  c.getWifiConfig("config.txt");
+  cron.readConfig("config.txt", "cron");
+
+  Serial.printf("Cron config: %d %d %d %d \n", (signed char) cron.seconds, (signed char)cron.minutes, (signed char)cron.hours, (signed char)cron.days);
+
   Serial.print("SSID: ");
   Serial.println(c.ssid);
   Serial.print(" Password: ");
@@ -58,6 +63,13 @@ void setup() {
 }
 
 void loop() {
+  bool hit = cron.checkScheduleSinceExecutionStart();
+  delay(100);
+  if (hit) {
+    Serial.println("HIT");
+    handleWater();
+    delay(1000);
+  }
   // put your main code here, to run repeatedly:
   web.handleClient();
 }

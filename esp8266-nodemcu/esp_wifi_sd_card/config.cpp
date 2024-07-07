@@ -6,16 +6,18 @@
 #include <string>
 #include <algorithm>
 #include "./config.h"
+#include "config.h"
 
 #define CONFIG_ITEM_SIZE_BYTES 50
 
-void Config::getWifiConfig(WifiConfig *out, const char * filename)
+void WifiConfig::getWifiConfig(const char * filename)
 {
   File configFile = SD.open(filename);
-  findInFile(out->ssid, &configFile, "ssid");
+  findInFile(this->ssid, &configFile, "ssid");
   configFile.close();
   configFile = SD.open(filename);
-  findInFile(out->password, &configFile, "password");
+  findInFile(this->password, &configFile, "password");
+  configFile.close();
 }
 
 void findInFile(char *out, File *inFileRaw, const char keyToFind[10])
@@ -41,7 +43,6 @@ void findInFile(char *out, File *inFileRaw, const char keyToFind[10])
         strcpy(out, value); // Copy the part after '=' to 'value'
         continue;
       }
-      Serial.printf("Did not find key %s \n", key);
     }
   }
 };

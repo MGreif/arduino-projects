@@ -7,9 +7,13 @@
 #include <iostream>
 #include <stdio.h>
 #include "cron.h"
+#include "waterpump.h"
 
 ESP8266WebServer web(80);
 Cron cron;
+WaterPumpConfig w;
+WifiConfig c;
+
 
 int waterPin = D0;
 
@@ -31,18 +35,24 @@ void setup() {
   }
   Serial.println("Initialized SD Card");
   Serial.println("Reading config ...");
-  WifiConfig c;
 
   c.getWifiConfig("config.txt");
   cron.readConfig("config.txt", "cron");
+  cron.debug();
 
-  Serial.printf("Cron config: %d %d %d %d \n", (signed char) cron.seconds, (signed char)cron.minutes, (signed char)cron.hours, (signed char)cron.days);
+  w.getWaterPumpConfig("config.txt", "waterpumpSeconds");
+  w.debug();
 
-  Serial.print("SSID: ");
-  Serial.println(c.ssid);
-  Serial.print(" Password: ");
-  Serial.println(c.password);
+
+  // Print wifi config
+  c.debug();
+  if (!c.setWifiStaticConfig()) {
+    Serial.println("Failed setting static wifi config!");
+    Serial.println("Fallback to DHCP");
+  }
+
   Serial.println("Connecting to wifi ....");
+
   WiFi.begin(c.ssid, c.password);
 
   wl_status_t status;
@@ -77,9 +87,8 @@ void loop() {
 void handleWater() {
   Serial.println("Water");
   digitalWrite(waterPin, HIGH);
-  delay(10000);
+  delay(w.waterpumpSeconds*1000);
   digitalWrite(waterPin, LOW);
-
 }
 
 void handleRoot() {

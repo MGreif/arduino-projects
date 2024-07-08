@@ -1,1 +1,1 @@
-../esp_wifi_sd_card/config.h
+../../shared_libraries/config.h

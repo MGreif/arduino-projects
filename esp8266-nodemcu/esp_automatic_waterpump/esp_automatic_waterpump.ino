@@ -77,7 +77,7 @@ void loop() {
   delay(100);
   if (hit) {
     Serial.println("HIT");
-    handleWater();
+    //handleWater();
     delay(1000);
   }
   // put your main code here, to run repeatedly:
@@ -87,7 +87,7 @@ void loop() {
 void handleWater() {
   Serial.println("Water");
   digitalWrite(waterPin, HIGH);
-  delay(w.waterpumpSeconds*1000);
+  delay(2000);
   digitalWrite(waterPin, LOW);
 }
 

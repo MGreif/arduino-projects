@@ -13,10 +13,8 @@
 #include "config.h"
 
 
-void Cron::readConfig(const char * configFileName, const char * configKey) {
-  File configFile = SD.open(configFileName);
-  findInFile(this->cronString, &configFile, configKey);
-  configFile.close();
+void Cron::readConfig(Config& config, const char * configKey) {
+  config.get(this->cronString, configKey);
   this->readConfigFromString(this->cronString, 50);
 }
 

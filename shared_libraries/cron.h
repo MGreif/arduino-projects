@@ -1,6 +1,8 @@
 #ifndef MIKA_CRON
 #define MIKA_CRON
 #include <stdint.h>
+#include "config.h"
+
 
 class Cron {
 
@@ -10,7 +12,7 @@ public:
   char minutes = '\0';
   char hours = '\0';
   char days = '\0';
-  void readConfig(const char * configFileName, const char * configKey);
+  void readConfig(Config& config, const char * configKey);
   void debug();
   bool checkScheduleSinceExecutionStart();
 

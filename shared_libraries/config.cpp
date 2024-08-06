@@ -10,31 +10,25 @@
 #include <ESP8266WiFi.h>
 
 
-void WifiConfig::getWifiConfig(const char * filename)
+void SDConfig::get(char* out, const char key[CONFIG_ITEM_SIZE_BYTES]) {
+  File configFile = SD.open(this->configFileName);
+  findInFile(out, &configFile, key);
+  configFile.close();
+}
+
+void WifiConfig::getWifiConfig(Config& config, const char * filename)
 {
-  File configFile = SD.open(filename);
-  findInFile(this->ssid, &configFile, "ssid");
-  configFile.close();
+  config.get(this->ssid, "ssid");
   
-  configFile = SD.open(filename);
-  findInFile(this->password, &configFile, "password");
-  configFile.close();
+  config.get(this->password, "password");
   
-  configFile = SD.open(filename);
-  findInFile(this->useStaticIP, &configFile, "useStaticIP");
-  configFile.close();
+  config.get(this->useStaticIP, "useStaticIP");
   
-  configFile = SD.open(filename);
-  findInFile(this->IPv4, &configFile, "IPv4");
-  configFile.close();
+  config.get(this->IPv4, "IPv4");
 
-  configFile = SD.open(filename);
-  findInFile(this->gateway, &configFile, "gateway");
-  configFile.close();
+  config.get(this->gateway, "gateway");
 
-  configFile = SD.open(filename);
-  findInFile(this->subnet, &configFile, "subnet");
-  configFile.close();
+  config.get(this->subnet, "subnet");
 }
 
 bool WifiConfig::setWifiStaticConfig() {
@@ -89,7 +83,7 @@ void WifiConfig::debug() {
 
 
 
-void findInFile(char *out, File *inFileRaw, const char keyToFind[10])
+void findInFile(char *out, File *inFileRaw, const char keyToFind[CONFIG_ITEM_SIZE_BYTES])
 {
   while ((*inFileRaw).available())
   {
@@ -102,9 +96,9 @@ void findInFile(char *out, File *inFileRaw, const char keyToFind[10])
     {
       // Split line at the first '='
       *delimiter = '\0'; // Replace '=' with '\0' to separate key and value
-      char key[50] = {'\0'};
+      char key[CONFIG_ITEM_SIZE_BYTES] = {'\0'};
       strcpy(key, line);
-      char value[50];
+      char value[CONFIG_ITEM_SIZE_BYTES];
       strcpy(value, delimiter + 1);
 
       if (strcmp(key, keyToFind) == 0)

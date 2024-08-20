@@ -4,6 +4,15 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 
+#ifndef CONFIG_H_
+#define CONFIG_H_
+ 
+// CPU frequency in Hz
+#define F_CPU 1000000   // 1 MHz
+ 
+#endif /* CONFIG_H_ */
+
+
 void cleanup();
 void action();
 bool checkScheduleSinceExecutionStart(short day, short hour, short minute, short second);
@@ -25,9 +34,6 @@ void setup() {
   pinMode(statusPin, OUTPUT);
   pinMode(lengthModifierPin, INPUT);
   status();
-  digitalWrite(waterPin, HIGH);
-  delay(200);
-  digitalWrite(waterPin, LOW);
   cli();
   wdt_reset();
   MCUSR &= ~(1 << WDRF);
@@ -62,8 +68,8 @@ ISR(WDT_vect) {
 void loop() {
   long c = millis();
   long current_time = elapsedTime + c + old_millis;
-  bool shouldWater = checkScheduleSinceExecutionStart(current_time, -1, -1, -1, 5);
-  bool shouldShowStatus = checkScheduleSinceExecutionStart(current_time, -1, -1, -1, 10);
+  bool shouldWater = checkScheduleSinceExecutionStart(current_time, -1, 0, 0, 10);
+  bool shouldShowStatus = checkScheduleSinceExecutionStart(current_time, -1, -1, 0, 10);
   if (shouldWater) {
     pumpWater();
   }

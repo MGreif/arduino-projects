@@ -5,26 +5,17 @@
 */
 
 void setup() {
-  pinMode(PB4, OUTPUT);
-  digitalWrite(PB4, HIGH);
-  delay(100);
-  digitalWrite(PB4, LOW);
-  delay(100);
-  digitalWrite(PB4, HIGH);
-  delay(100);
-  digitalWrite(PB4, LOW);
-  delay(100);
   setup_timer();
 }
 
 void setup_timer() {
   DDRB |= 0x01;
   TCCR0A |= B10000011;
-  TCCR0B = TCCR0B & B00000000 | 0x01;
+  TCCR0B = TCCR0B & B00000000 | 0x04;
 }
 
 void loop() {
   int val = analogRead(A3);  
   OCR0A = byte(map(val, 0, 1023, 0, 255));
-  delay(80);
+  delay(10);
 }

@@ -1,8 +1,12 @@
+#include </home/mika/Arduino/libraries/DS1307_RTC_ATTINY/DS1307RTC.h>
+
 #include <avr/wdt.h>
 #include <avr/sleep.h>
 #include <avr/power.h>
 #include <avr/interrupt.h>
 #include <avr/io.h>
+#include <TinyWireM.h>
+
 
 #ifndef CONFIG_H_
 #define CONFIG_H_
@@ -12,19 +16,21 @@
  
 #endif /* CONFIG_H_ */
 
-
 void cleanup();
 void action();
-bool checkScheduleSinceExecutionStart(short day, short hour, short minute, short second);
+bool checkScheduleSinceExecutionStart(tmElements_t current_time, uint8_t day, uint8_t hour, uint8_t minute, uint8_t second);
 void go_to_sleep();
 void setup_timer();
 
 int waterPin = 4; 
 int statusPin = 3;
 int lengthModifierPin = A1;
-long old_millis = 0;
 
 volatile uint32_t elapsedTime = 0; // Time in milliseconds
+
+USI_TWI tw;
+
+DS1307RTC rtc(tw);
 
 void status();
 
@@ -41,6 +47,8 @@ void setup() {
   WDTCR = (1 << WDP2) | (1 << WDP1);
   WDTCR |= (1 << WDIE); //Watchdog  Mode = Interrupt Mode
   sei();
+  tw.begin();
+
 }
 
 
@@ -62,14 +70,18 @@ void status() {
 
 ISR(WDT_vect) {
   wdt_reset();
-  elapsedTime += 1000;
 }
 
 void loop() {
-  long c = millis();
-  long current_time = elapsedTime + c + old_millis;
-  bool shouldWater = checkScheduleSinceExecutionStart(current_time, -1, 0, 0, 10);
-  bool shouldShowStatus = checkScheduleSinceExecutionStart(current_time, -1, -1, 0, 10);
+
+  tmElements_t current_time;
+  reset_watchdog();
+
+  rtc.read(current_time);
+  
+  reset_watchdog();
+  bool shouldWater = checkScheduleSinceExecutionStart(current_time, 255, 12, 0, 0);
+  bool shouldShowStatus = checkScheduleSinceExecutionStart(current_time, 255, 255, 255, 10);
   if (shouldWater) {
     pumpWater();
   }
@@ -77,11 +89,6 @@ void loop() {
   if (shouldShowStatus) {
     status();
   }
-
-  if (shouldShowStatus || shouldWater) {
-    old_millis = millis();
-  }
-
   go_to_sleep();
   
 }
@@ -124,55 +131,28 @@ void pumpWater() {
     digitalWrite(waterPin, LOW);
 };
 
-bool checkScheduleSinceExecutionStart(long time_base, short day, short hour, short minute, short second) {
-  long baseMillis = time_base;
-  
-  // Calculate offsets from baseMillis
-  float millisToSecondOffset =  baseMillis / 1000;
-  float millisToMinuteOffset =  millisToSecondOffset / 60;
-  float millisToHourOffset =  millisToMinuteOffset / 60;
-  float millisToDayOffset =  millisToHourOffset / 24;
-
-  // Get full days since execution start
-  float dayDelta = millisToDayOffset;
-  float dayOfYear = fmod(floor(dayDelta), 365);
-  // All following currentXXX variables were used to calculate the actual year from an absolute UNIX timestamp
-  float currentDay = dayDelta - dayOfYear;
-
-  // Get full hours since execution start
-  float hourDelta = millisToHourOffset;
-  float hourOfDay = fmod(floor(hourDelta), 24);
-  float currentHour = hourDelta - hourOfDay;
-
-  // Get full minutes since execution start
-  float minuteDelta = millisToMinuteOffset;
-  float minuteOfHour = fmod(floor(minuteDelta), 60);
-  float currentMinute = minuteDelta - minuteOfHour;
-
-  // Get full seconds since execution start
-  float secondDelta = millisToSecondOffset;
-  float secondOfMinute = fmod(floor(secondDelta), 60);
+bool checkScheduleSinceExecutionStart(tmElements_t current_time, uint8_t day, uint8_t hour, uint8_t minute, uint8_t second) {
 
   // Populating "every" values with the current value
-  float dayDefault = day;
-  if (day == -1) {
-    dayDefault = dayOfYear;
+  uint8_t dayDefault = day;
+  if (day == 255) {
+    dayDefault = current_time.Day;
   }
 
-  float hourDefault = hour;
-  if (hour == -1) {
-    hourDefault = hourOfDay;
+  uint8_t hourDefault = hour;
+  if (hour == 255) {
+    hourDefault = current_time.Hour;
   }
 
-  float minuteDefault = minute;
-  if (minute == -1) {
-    minuteDefault = minuteOfHour;
+  uint8_t minuteDefault = minute;
+  if (minute == 255) {
+    minuteDefault = current_time.Minute;
   }
 
-  float secondDefault = second;
-  if (second == -1) {
-    secondDefault = secondOfMinute;
+  uint8_t secondDefault = second;
+  if (second == 255) {
+    secondDefault = current_time.Second;
   };
 
-  return dayOfYear == dayDefault && hourOfDay == hourDefault && minuteOfHour == minuteDefault && secondOfMinute == secondDefault;
+  return current_time.Day == dayDefault && current_time.Hour == hourDefault && current_time.Minute == minuteDefault && current_time.Second == secondDefault;
 }

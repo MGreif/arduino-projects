@@ -1,8 +1,6 @@
 #include <DS1307RTC.h>
 
 DS1307RTC rtc;
-tmElements_t tm;
-
 
 
 void printTime(tmElements_t &tm) {

@@ -16,55 +16,110 @@
  
 #endif /* CONFIG_H_ */
 
+
+#define DEBUG false
+#define SHOULD_SET_TIME false
+
 void cleanup();
 void action();
 bool checkScheduleSinceExecutionStart(tmElements_t current_time, uint8_t day, uint8_t hour, uint8_t minute, uint8_t second);
 void go_to_sleep();
 void setup_timer();
+void reset_watchdog();
 
-int waterPin = 4; 
+int waterPin = 1; 
 int statusPin = 3;
-int lengthModifierPin = A1;
-
-volatile uint32_t elapsedTime = 0; // Time in milliseconds
+int lengthModifierPin = A2;
 
 USI_TWI tw;
 
 DS1307RTC rtc(tw);
 
-void status();
+void status(bool special);
 
-void setup() {
-  // put your setup code here, to run once:
-  pinMode(waterPin, OUTPUT);
-  pinMode(statusPin, OUTPUT);
-  pinMode(lengthModifierPin, INPUT);
-  status();
-  cli();
-  wdt_reset();
-  MCUSR &= ~(1 << WDRF);
-  WDTCR = (1 << WDCE) | (1 << WDE);
-  WDTCR = (1 << WDP2) | (1 << WDP1);
-  WDTCR |= (1 << WDIE); //Watchdog  Mode = Interrupt Mode
-  sei();
-  tw.begin();
+tmElements_t t;
+
+void debug_blink(uint8_t amount) {
+  for (uint8_t i = 0; i < amount ; i++) {
+    digitalWrite(statusPin, HIGH);
+    delay(50);
+    digitalWrite(statusPin, LOW);
+    reset_watchdog();
+
+    if (i < amount-1) {
+      delay(100);
+    }
+  }
 
 }
 
+void setup() {
+  pinMode(waterPin, OUTPUT);
+  pinMode(statusPin, OUTPUT);
+  pinMode(lengthModifierPin, INPUT);
+  cli();
+  wdt_reset();
+  MCUSR &= ~(1 << WDRF);
+  WDTCR |= (1 << WDCE);
+  WDTCR |= (1 << WDP2) | (1 << WDP1);
+  WDTCR |= (1 << WDIE); //Watchdog  Mode = Interrupt Mode
+  sei();
 
-void status() {
+  status(true);
+
+  tw.begin();
+  rtc.sqw(0);
+  // Following code sets the time
+  if (SHOULD_SET_TIME) {
+    t.Second = 0;
+    t.Minute = 40;
+    t.Hour = 18;
+    t.Day = 11;
+    t.Month = 9;
+    t.Wday = 5;
+    t.Year = 124;
+    rtc.write(t);
+  }
+}
+
+
+void status(bool special) {
   reset_watchdog();
   digitalWrite(statusPin, HIGH);
-  delay(200);
+  delay(500);
+  reset_watchdog();
   digitalWrite(statusPin, LOW);
   delay(50);
+  reset_watchdog();
   digitalWrite(statusPin, HIGH);
-  delay(200);
+  delay(500);
+  reset_watchdog();
   digitalWrite(statusPin, LOW);
   delay(50);
+
+  reset_watchdog();
   digitalWrite(statusPin, HIGH);
-  delay(200);
+  delay(500);
+  reset_watchdog();
+
   digitalWrite(statusPin, LOW);
+    reset_watchdog();
+  if(special) {
+    delay(50);
+  digitalWrite(statusPin, HIGH);
+  reset_watchdog();
+
+  delay(800);
+    reset_watchdog();
+  digitalWrite(statusPin, LOW);
+  delay(50);
+    reset_watchdog();
+
+  digitalWrite(statusPin, HIGH);
+  delay(800);
+    reset_watchdog();
+  digitalWrite(statusPin, LOW);
+  }
   reset_watchdog();
 }
 
@@ -73,49 +128,54 @@ ISR(WDT_vect) {
 }
 
 void loop() {
-
+  if (DEBUG) {
+    debug_blink(1);
+  }
   tmElements_t current_time;
+
   reset_watchdog();
 
   rtc.read(current_time);
   
   reset_watchdog();
-  bool shouldWater = checkScheduleSinceExecutionStart(current_time, 255, 12, 0, 0);
-  bool shouldShowStatus = checkScheduleSinceExecutionStart(current_time, 255, 255, 255, 10);
+  bool shouldWater = checkScheduleSinceExecutionStart(current_time, 255, 19, 0, 0);
+  bool shouldShowStatus1 = checkScheduleSinceExecutionStart(current_time, 255, 255, 0, 0);
+
   if (shouldWater) {
     pumpWater();
   }
 
-  if (shouldShowStatus) {
-    status();
+  if (shouldShowStatus1) {
+    status(false);
   }
   go_to_sleep();
-  
 }
 
 void go_to_sleep() {
-  reset_watchdog();
-  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-  noInterrupts();
-  power_all_disable();
-  sleep_enable();
-  sei();
-  sleep_cpu();
-  sleep_disable();
-  power_all_enable();
+    reset_watchdog();
+    if (DEBUG) {
+        debug_blink(2);
+    }
+    
+    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+    cli();
+    power_all_disable();
+    sleep_enable();
+    sei();
+
+    sleep_cpu();
+
+    sleep_disable();
+    power_all_enable();
 }
 
 void reset_watchdog() {
-  cli();
-  MCUSR &= ~(1 << WDRF);
-  WDTCR = bit ( WDCE ) | bit ( WDE ) | bit ( WDIF ); // allow changes, disable reset, clear existing interrupt
-  WDTCR = bit ( WDIE ) | bit ( WDP2 )| bit ( WDP1 ); // set WDIE ( Interrupt only, no Reset ) and 1 second TimeOut
-  sei();
+  wdt_reset();
 }
 
 void pumpWater() {
     int length = analogRead(lengthModifierPin);
-    status();
+    status(false);
     digitalWrite(waterPin, HIGH);
     reset_watchdog();
     delay(500); // Min 0.5 seconds
@@ -132,8 +192,6 @@ void pumpWater() {
 };
 
 bool checkScheduleSinceExecutionStart(tmElements_t current_time, uint8_t day, uint8_t hour, uint8_t minute, uint8_t second) {
-
-  // Populating "every" values with the current value
   uint8_t dayDefault = day;
   if (day == 255) {
     dayDefault = current_time.Day;

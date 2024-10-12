@@ -15,7 +15,7 @@ void sendCommand(String command) {
 
   // Send command to Bluetooth module
   mySerial.print(command);
-  mySerial.print("\r\n");
+  //mySerial.print("\r\n");
 
   // Wait briefly to ensure command is sent
   delay(200);
@@ -56,8 +56,10 @@ String waitForResponse() {
       char receivedChar = mySerial.read();  // Read a single character
       response += receivedChar;  // Append character to response string
   }
-  mySerial.print("THX :)\r\n");
 
+  if (response != "") {
+    mySerial.print("THX :)\r\n");
+  }
   // Print the complete response to the Serial monitor
   return response;
 }
@@ -67,19 +69,37 @@ void setup() {
   Serial.begin(9600);
   mySerial.begin(9600);
   pinMode(ledPin, OUTPUT);
-  delay(100);
-  sendCommand("AT+VERS?");
+  digitalWrite(ledPin, HIGH);
+  delay(1000);
+  digitalWrite(ledPin, LOW);
 
-  sendCommand("AT+TYPE?");
-  sendCommand("AT+TYPE2");
-  sendCommand("AT+TYPE?");
+ // sendCommand("AT+VERS?");
+
+ // sendCommand("AT+TYPE?");
+ // sendCommand("AT+NAMEMIKABLE");
+ // sendCommand("AT+TYPE2");
+ // sendCommand("AT+PASS123456");
+// sendCommand("AT+TYPE?");
+ //sendCommand("AT+ADDR?");
+
+ // Configuring the slave
+ //sendCommand("AT+ADVI0");
+ //sendCommand("AT+ROLE0");
+// sendCommand("AT+FLAG0");
 
   // put your setup code here, to run once:
 
 }
-AT+HELP?
 void loop() {  
   delay(10);
+  String x;
   // put your main code here, to run repeatedly:
-
+  while ((x = waitForResponse()) != NULL) {
+    Serial.println(x);
+    if (strncmp(x.c_str(), "hi", 2) == 0) {
+      digitalWrite(ledPin, HIGH);
+    } else {
+      digitalWrite(ledPin, LOW);
+    }
+  }
 }
